@@ -17,6 +17,7 @@ public abstract class AbstractPage implements Page {
             this.oldData = page.getOriginData().clone();
 
             // 构建页面数据
+            if (oldData.length <= 0) return;
             DataInputStream dis = new DataInputStream(new ByteArrayInputStream(oldData));
             try {
                 constructData(dis);

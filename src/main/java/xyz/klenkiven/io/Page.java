@@ -6,7 +6,7 @@ package xyz.klenkiven.io;
 public interface Page {
 
     /** 默认的页面大小 */
-    int PAGE_SIZE = 4096;
+    int PAGE_SIZE = 1024;
 
     int INVALID_PAGE_NO = -1;
 

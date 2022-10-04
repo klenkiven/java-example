@@ -1,11 +1,12 @@
 package xyz.klenkiven.io;
 
+import java.io.Closeable;
 import java.io.FileNotFoundException;
 
 /**
  * 分页的文件
  */
-public interface PaginatedFile {
+public interface PaginatedFile extends Closeable {
 
     /**
      * 获取文件中页面ID的页面

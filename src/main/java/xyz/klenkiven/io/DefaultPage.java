@@ -17,6 +17,6 @@ public class DefaultPage extends AbstractPage {
 
     @Override
     protected void writePageContent(DataOutputStream dos) throws IOException {
-
+        dos.write(getOriginData(), 0, PAGE_SIZE);
     }
 }

@@ -2,10 +2,12 @@ package xyz.klenkiven.io.alloc;
 
 import xyz.klenkiven.io.Page;
 
+import java.io.Closeable;
+
 /**
  * 空间分配器
  */
-public interface Allocator {
+public interface Allocator extends Closeable {
 
     /**
      * 获取一个可以使用的空间（空间大小为 PAGE_SIZE）

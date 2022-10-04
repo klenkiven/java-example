@@ -11,9 +11,15 @@ import static xyz.klenkiven.io.Page.PAGE_SIZE;
 
 public class FileAllocator implements Allocator {
 
+    private static int FILE_ALLOC_PAGE = 0;
+
     static class FileAllocPage extends AbstractPage {
         int headAvailablePageNo = INVALID_PAGE_NO;
         int tailAvailablePageNo = INVALID_PAGE_NO;
+
+        public FileAllocPage(int pageNo) {
+            super(pageNo, new byte[0]);
+        }
 
         public FileAllocPage(Page firstPage) { super(firstPage); }
 
@@ -35,6 +41,10 @@ public class FileAllocator implements Allocator {
 
         public AvailablePage(Page page) { super(page); }
 
+        /**
+         * 初始化一个空白的可用节点
+         * @param pageNo 可用节点页面ID
+         */
         public AvailablePage(int pageNo) {
             super(pageNo, new byte[0]);
             this.nextPage = INVALID_PAGE_NO;
@@ -101,9 +111,22 @@ public class FileAllocator implements Allocator {
     public synchronized int allocate() {
         ensureAvailablePage();
 
-        AvailablePage availablePage = new AvailablePage(paginatedFile.getPage(head));
-        head = availablePage.nextPage;
-        return head;
+        int availablePageNo = INVALID_PAGE_NO;
+
+        // 每次首先检查首节点是是否和尾节点一致（减少一次I/O）
+        if (head == tail && tail != INVALID_PAGE_NO) {
+            head = INVALID_PAGE_NO; tail = INVALID_PAGE_NO;
+            availablePageNo = tailPage.getPageNo();
+            tailPage = null;
+        }
+        // 非首节点处理
+        else {
+            AvailablePage availablePage = new AvailablePage(paginatedFile.getPage(head));
+            availablePageNo = availablePage.getPageNo();
+            head = availablePage.nextPage;
+        }
+
+        return availablePageNo;
     }
 
     /**
@@ -119,36 +142,56 @@ public class FileAllocator implements Allocator {
      */
     private int appendNewPage() {
         int nextPageNo = (int) (file.length() / PAGE_SIZE);
-        AvailablePage newAvailablePage = new AvailablePage(nextPageNo);
-
-        int newPageFp = (int) (file.length() - 1);
-        try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
-            // 尾节点处理
-            tailPage.nextPage = nextPageNo;
-            raf.seek((long) tail * PAGE_SIZE);
-            raf.read(tailPage.getPageData());
-
-            // 新节点处理 (不必真的写入)
-            tail = newPageFp;
-            tailPage = newAvailablePage;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        // 添加到链表尾部
+        add(nextPageNo);
         return nextPageNo;
     }
 
     @Override
-    public synchronized void drop(int pageNo) {
-        try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
-            // 尾节点处理
-            tailPage.nextPage = pageNo;
-            raf.seek((long) tail * PAGE_SIZE);
-            raf.read(tailPage.getPageData());
+    public void drop(int pageNo) {
+        add(pageNo);
+    }
 
-            // 新节点处理 (不必真的写入)
-            tail = pageNo;
+    /**
+     * 回收一个页面
+     * @param pageNo 回收的页面ID
+     */
+    private synchronized void add(int pageNo) {
+        // 如果末尾节点为非法节点，那么首节点也一定为非法
+        if (tail == INVALID_PAGE_NO && tailPage == null) {
+            tail = pageNo; head = tail;
             tailPage = new AvailablePage(pageNo);
+        }
+        // 处理尾节点非首节点的情况，涉及一次I/O操作
+        else {
+            tail = pageNo;
+            try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+                // 处理结结尾节点
+                tailPage.nextPage = pageNo;
+                raf.seek((long) tailPage.getPageNo() * PAGE_SIZE);
+                raf.write(tailPage.getPageData(), 0, PAGE_SIZE);
+
+                // 处理当前分配器的状态
+                tail = pageNo; tailPage = new AvailablePage(pageNo);
+                if (head == INVALID_PAGE_NO) head = tail;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 持久化分配器状态
+     */
+    @Override
+    public synchronized void close() {
+        FileAllocPage fileAllocPage = new FileAllocPage(FILE_ALLOC_PAGE);
+        fileAllocPage.headAvailablePageNo = head;
+        fileAllocPage.tailAvailablePageNo = tail;
+
+        try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+            raf.seek(fileAllocPage.getPageNo());
+            raf.write(fileAllocPage.getPageData());
         } catch (IOException e) {
             e.printStackTrace();
         }
