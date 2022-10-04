@@ -1,4 +1,4 @@
-package xyz.klenkiven.collection;
+package xyz.klenkiven.collection.map;
 
 import java.util.Map;
 import java.util.Objects;
