@@ -1,4 +1,4 @@
-package xyz.klenkiven.io;
+package xyz.klenkiven.io.prototype;
 
 import java.io.*;
 
@@ -6,10 +6,15 @@ import java.io.*;
  * 页面的抽象实现
  */
 public abstract class AbstractPage implements Page {
+    /** 页面头部大小 */
+    public static final int PAGE_HEADER_SIZE = 1;
+
     /** 页面序号 */
     private final int pageNo;
     /** 判断是否为垃圾 */
-    private byte isTrash = 1;
+    private byte isTrash = 0;
+    /** 页面可用空间大小 */
+    protected int available = PAGE_SIZE - PAGE_HEADER_SIZE;
     /** 页面原始数据 */
     private byte[] data;
     /** 页面容量 */
@@ -52,7 +57,12 @@ public abstract class AbstractPage implements Page {
 
     @Override
     public boolean isTrash() {
-        return isTrash == 1;
+        return isTrash == 0;
+    }
+
+    @Override
+    public void unmarkTrash() {
+        isTrash = 1;
     }
 
     @Override
@@ -72,6 +82,7 @@ public abstract class AbstractPage implements Page {
 
         // 写入页面相关数据
         try {
+            dos.writeByte(isTrash);
             writePageContent(dos);
         } catch (IOException e) {
             e.printStackTrace();

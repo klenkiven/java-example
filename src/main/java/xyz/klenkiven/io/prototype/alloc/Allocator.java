@@ -1,6 +1,4 @@
-package xyz.klenkiven.io.alloc;
-
-import xyz.klenkiven.io.Page;
+package xyz.klenkiven.io.prototype.alloc;
 
 import java.io.Closeable;
 

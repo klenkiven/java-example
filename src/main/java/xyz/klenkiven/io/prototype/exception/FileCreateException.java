@@ -1,4 +1,4 @@
-package xyz.klenkiven.io.exception;
+package xyz.klenkiven.io.prototype.exception;
 
 public class FileCreateException extends RuntimeException {
 }

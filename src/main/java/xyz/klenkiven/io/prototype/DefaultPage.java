@@ -1,10 +1,8 @@
-package xyz.klenkiven.io;
+package xyz.klenkiven.io.prototype;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-
-import static xyz.klenkiven.io.Page.PAGE_SIZE;
 
 public class DefaultPage extends AbstractPage {
 
@@ -19,6 +17,6 @@ public class DefaultPage extends AbstractPage {
 
     @Override
     protected void writePageContent(DataOutputStream dos) throws IOException {
-        dos.write(getOriginData(), 0, PAGE_SIZE);
+        dos.write(getOriginData(), PAGE_HEADER_SIZE, available);
     }
 }

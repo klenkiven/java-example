@@ -1,4 +1,4 @@
-package xyz.klenkiven.io;
+package xyz.klenkiven.io.prototype;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Date;

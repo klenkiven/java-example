@@ -1,7 +1,6 @@
-package xyz.klenkiven.io;
+package xyz.klenkiven.io.prototype;
 
 import java.io.Closeable;
-import java.io.FileNotFoundException;
 
 /**
  * 分页的文件
