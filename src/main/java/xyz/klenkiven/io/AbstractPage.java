@@ -6,33 +6,41 @@ import java.io.*;
  * 页面的抽象实现
  */
 public abstract class AbstractPage implements Page {
+    /** 页面序号 */
     private final int pageNo;
-    protected byte[] oldData;
+    /** 判断是否为垃圾 */
+    private byte isTrash = 1;
+    /** 页面原始数据 */
+    private byte[] data;
+    /** 页面容量 */
+    protected int capacity = PAGE_SIZE;
 
-    public AbstractPage() { this(null); }
+    public AbstractPage(int pageNo, byte[] data) {
+        // 初始化数据 和 ID
+        this.pageNo = pageNo;
+        if (data == null || data.length == 0) return;
+        this.data = data.clone();
 
-    public AbstractPage(Page page) {
-        if (page != null) {
-            this.pageNo = page.getPageNo();
-            this.oldData = page.getOriginData().clone();
-
-            // 构建页面数据
-            if (oldData.length <= 0) return;
-            DataInputStream dis = new DataInputStream(new ByteArrayInputStream(oldData));
-            try {
-                constructData(dis);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            this.pageNo = INVALID_PAGE_NO;
-            this.oldData = new byte[0];
+        /* 处理数据内容 构建页面 */
+        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
+        try {
+            // 处理页头的数据内容
+            constructPageHeaderData(dis);
+            // 处理页面数据
+            constructData(dis);
+            // 判断剩余容量
+            capacity = dis.available();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    public AbstractPage(int pageNo, byte[] data) {
-        this.pageNo = pageNo;
-        this.oldData = data.clone();
+    /**
+     * 处理页面头部数据
+     * @param dis 数据输入流
+     */
+    private void constructPageHeaderData(DataInputStream dis) throws IOException {
+        this.isTrash = dis.readByte();
     }
 
     /**
@@ -43,13 +51,18 @@ public abstract class AbstractPage implements Page {
     protected abstract void constructData(DataInputStream dis) throws IOException;
 
     @Override
+    public boolean isTrash() {
+        return isTrash == 1;
+    }
+
+    @Override
     public int getPageNo() {
         return pageNo;
     }
 
     @Override
     public byte[] getOriginData() {
-        return oldData;
+        return data;
     }
 
     @Override
