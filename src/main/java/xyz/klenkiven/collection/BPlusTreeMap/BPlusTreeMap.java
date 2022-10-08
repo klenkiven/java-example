@@ -2,8 +2,9 @@ package xyz.klenkiven.collection.BPlusTreeMap;
 
 import xyz.klenkiven.collection.BPlusTreeMap.utils.PageUtil;
 
-import java.security.spec.RSAOtherPrimeInfo;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 public class BPlusTreeMap<K extends Comparable<K>, V> {
     public static HashMap<Integer, NodePage<?, ?>> pageCache = new HashMap<>();
@@ -95,6 +96,19 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
         int minOrder = order >> 1;
         for(;;) {
             NodeIndex<K, V> remove = nodePage.nodeList.remove(pos);
+            if (nodePage.id == topPageId) {
+                if (remove instanceof Node<K,V>) {
+                    return ;
+                }
+                if (nodePage.nodeList.size() == 1) {
+                    NodeIndex<K, V> nodeIndex = nodePage.nodeList.get(0);
+                    NodePage<K, V> newTop = this.getNodePageById(nodeIndex.bottomPageId);
+                    newTop.parentPageId = -1;
+                    pageCache.remove(this.topPageId);
+                    this.topPageId = newTop.id;
+                }
+                return ;
+            }
             if (nodePage.nodeList.size() >= minOrder) return;
             NodePage<K, V> mergePage;
             int temp = 1;
@@ -121,6 +135,27 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
                 else parent.nodeList.get(posTemp - 1).key = mergePage.getPageMaxKey();
                 return ;
             } else {
+                for (NodeIndex<K, V> nodeIndex : mergePage.nodeList) {
+                    if (nodeIndex.bottomPageId != -1) this.getNodePageById(nodeIndex.bottomPageId).parentPageId = nodePage.id;
+                }
+                if (temp == 1) {
+                    // 修改
+                    nodePage.nodeList.addAll(mergePage.nodeList);
+                    parent.nodeList.get(posTemp).key = nodePage.getPageMaxKey();
+                    nodePage.nextPageId = mergePage.nextPageId;
+                    if (mergePage.nextPageId != -1) {
+                        this.getNodePageById(nodePage.nextPageId).prePageId = nodePage.id;
+                    }
+                } else {
+                    mergePage.nodeList.addAll(nodePage.nodeList);
+                    nodePage.nodeList = mergePage.nodeList;
+                    nodePage.prePageId = mergePage.prePageId;
+                    if (mergePage.prePageId != -1) {
+                        this.getNodePageById(nodePage.prePageId).nextPageId = nodePage.id;
+                    }
+                }
+                if (mergePage.id == headPageId) headPageId = nodePage.id;
+                pageCache.remove(mergePage.id);
             }
             nodePage = parent;
             pos = posTemp + temp;

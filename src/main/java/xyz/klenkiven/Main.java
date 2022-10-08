@@ -5,10 +5,12 @@ import xyz.klenkiven.collection.BPlusTreeMap.BPlusTreeMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.TreeSet;
 
 public class Main {
     public static void main(String[] args) {
         BPlusTreeMap<Integer, Integer> map = new BPlusTreeMap<>(1000);
+        TreeSet<Integer> sy = new TreeSet<>();
         List<Integer> data = new ArrayList<>();
         for (int i = 0; i < 1000000; i++) {
             data.add(i);
@@ -19,7 +21,12 @@ public class Main {
             map.put(item, item - 1);
         }
         System.out.println(System.currentTimeMillis() - startTime);
-        System.out.println(BPlusTreeMap.pageCache.size());;
         Collections.shuffle(data);
+        startTime = System.currentTimeMillis();
+        for (int i = 0; i < 1000000 - 20; i++) {
+            map.remove(data.get(i));
+        }
+        System.out.println(System.currentTimeMillis() - startTime);
+        System.out.println(map.getList());
     }
 }
