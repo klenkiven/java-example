@@ -37,6 +37,23 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
         return putVal(key, value);
     }
 
+    public V getFirst() {
+        NodePage<K, V> nodePageById = getNodePageById(this.headPageId);
+        if (nodePageById == null) return null;
+        if (nodePageById.nodeList.get(0) instanceof Node<K, V> node) {
+            return node.value;
+        }
+        return null;
+    }
+
+    public V getLast() {
+        NodePage<K, V> nodePageById = getNodePageById(this.tailPageId);
+        if (nodePageById == null) return null;
+        if (nodePageById.nodeList.get(nodePageById.nodeList.size() - 1) instanceof Node<K, V> node) {
+            return node.value;
+        }
+        return null;
+    }
 
     public V get(K key) {
         return getVal(key);
@@ -155,6 +172,7 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
                     }
                 }
                 if (mergePage.id == headPageId) headPageId = nodePage.id;
+                if (mergePage.id == tailPageId) tailPageId = nodePage.id;
                 pageCache.remove(mergePage.id);
             }
             nodePage = parent;

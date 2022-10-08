@@ -2,10 +2,7 @@ package xyz.klenkiven;
 
 import xyz.klenkiven.collection.BPlusTreeMap.BPlusTreeMap;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
@@ -28,5 +25,7 @@ public class Main {
         }
         System.out.println(System.currentTimeMillis() - startTime);
         System.out.println(map.getList());
+        System.out.println(map.getFirst());
+        System.out.println(map.getLast());
     }
 }
