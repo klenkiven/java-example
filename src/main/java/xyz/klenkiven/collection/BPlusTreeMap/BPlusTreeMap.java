@@ -11,18 +11,21 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
     int topPageId;
     int headPageId;
 
+    int tailPageId;
+
     public BPlusTreeMap(int order) {
         this.order = order;
         NodePage<K, V> page = createPage();
         topPageId = page.id;
         headPageId = page.id;
+        tailPageId = page.id;
     }
 
     public NodePage<K, V> getNodePageById(int id) {
         return (NodePage<K, V>) pageCache.get(id);
     }
 
-    public NodePage<K, V> createPage() {
+    private NodePage<K, V> createPage() {
         int newPageId = PageUtil.getNewPageId();
         NodePage<K, V> temp = new NodePage<>(newPageId, -1, -1, -1);
         pageCache.put(newPageId, temp);
@@ -33,8 +36,22 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
         return putVal(key, value);
     }
 
+
+    public V get(K key) {
+        return getVal(key);
+    }
+
+    private V getVal(K key) {
+        SearchRes<K, V> searchRes = getNodePage(key);
+        if (searchRes == null) return null;
+        NodeIndex<K, V> nodeIndex = searchRes.nodePage.nodeList.get(searchRes.pos);
+        if (!(nodeIndex instanceof Node<K,V> node)) return null;
+        if (key.compareTo(node.key) != 0) return null;
+        return node.value;
+    }
+
+
     public List<NodeIndex<K, V>> getList() {
-        System.out.println(this.getNodePageById(this.topPageId).nodeList);
         List<NodeIndex<K, V>> res = new ArrayList<>();
         int headPageId = this.headPageId;
         while (headPageId != -1) {
@@ -43,6 +60,71 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
             headPageId = nodePageById.nextPageId;
         }
         return res;
+    }
+
+    private SearchRes<K, V> getNodePage(K key) {
+        NodePage<K, V> current = this.getNodePageById(this.topPageId);
+        if (current.nodeList.size() == 0) return null;
+        for(;;) {
+            int i = findLeft(current.nodeList, key);
+            if (i >= current.nodeList.size()) return null;
+            NodeIndex<K, V> nodeIndex = current.nodeList.get(i);
+            if (nodeIndex instanceof Node<K, V>) {
+                return new SearchRes<>(current, i);
+            }
+            current = this.getNodePageById(nodeIndex.bottomPageId);
+        }
+    }
+
+    public V remove(K key) {
+        return removeVal(key);
+    }
+
+    private V removeVal(K key) {
+        SearchRes<K, V> searchRes = getNodePage(key);
+        if (searchRes == null) return null;
+        NodePage<K, V> nodePage = searchRes.nodePage;
+        NodeIndex<K, V> nodeIndex = nodePage.nodeList.get(searchRes.pos);
+        if (!(nodeIndex instanceof Node<K,V> node)) return null;
+        if (key.compareTo(node.key) != 0) return null;
+        solveRemove(nodePage, searchRes.pos);
+        return node.value;
+    }
+
+    private void solveRemove(NodePage<K, V> nodePage, int pos) {
+        int minOrder = order >> 1;
+        for(;;) {
+            NodeIndex<K, V> remove = nodePage.nodeList.remove(pos);
+            if (nodePage.nodeList.size() >= minOrder) return;
+            NodePage<K, V> mergePage;
+            int temp = 1;
+            if (nodePage.nextPageId == -1 || getNodePageById(nodePage.nextPageId).parentPageId != nodePage.parentPageId) {
+                temp = -1;
+                mergePage = getNodePageById(nodePage.prePageId);
+            } else {
+                mergePage = getNodePageById(nodePage.nextPageId);
+            }
+            NodePage<K, V> parent = this.getNodePageById(nodePage.parentPageId);
+            int posTemp = findLeft(parent.nodeList, remove.key);
+            if (mergePage.nodeList.size() + nodePage.nodeList.size() > order) {
+                NodeIndex<K, V> pad;
+                // 如果向后寻求填充
+                if (temp == 1) pad = mergePage.nodeList.remove(0);
+                else pad = mergePage.nodeList.remove(mergePage.nodeList.size() - 1);
+                if (temp == 1) nodePage.nodeList.add(pad);
+                else nodePage.nodeList.add(0, pad);
+                pad.nodePageId = nodePage.id;
+                // 修改parent指针
+                if (pad.bottomPageId != -1) this.getNodePageById(pad.bottomPageId).parentPageId = nodePage.id;
+                // 向上传导
+                if (temp == 1) parent.nodeList.get(posTemp).key = pad.key;
+                else parent.nodeList.get(posTemp - 1).key = mergePage.getPageMaxKey();
+                return ;
+            } else {
+            }
+            nodePage = parent;
+            pos = posTemp + temp;
+        }
     }
 
     private V putVal(K key, V value) {
@@ -82,19 +164,12 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
             nodeIndex = current.nodeList.get(i);
             // 如果是叶子节点
             if (nodeIndex instanceof Node<K, V>) {
-                int tempI = i;
-                // 寻找相等的
-                while (key.compareTo(nodeIndex.key) == 0) {
-                    // 如果有完全相同的
-                    if (Objects.equals(key, nodeIndex.key)) {
-                        Node<K, V> findAns = (Node<K, V>) nodeIndex;
-                        V temp = findAns.value;
-                        findAns.value = value;
-                        return temp;
-                    }
-                    // 没有完全相同的
-                    if (++tempI >= current.nodeList.size()) break;
-                    nodeIndex = current.nodeList.get(tempI);
+                // 判断是否相等
+                if (key.compareTo(nodeIndex.key) == 0) {
+                    Node<K, V> findAns = (Node<K, V>) nodeIndex;
+                    V temp = findAns.value;
+                    findAns.value = value;
+                    return temp;
                 }
                 kvNode = new Node<>(key, current.id, value);
                 // 添加元素，分裂节点
@@ -150,7 +225,6 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
                 if (splitMode) {
                     // 优化分裂！！！！！
                     page.nodeList = current.nodeList;
-
                     current.nodeList = new ArrayList<>();
                     current.nodeList.add(page.nodeList.remove(page.nodeList.size()- 1));
                 } else {
@@ -158,7 +232,9 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
                     List<NodeIndex<K, V>> temp = current.nodeList;
                     int mid = temp.size() >> 1;
                     for (int i = 0; i < mid; i++) {
-                        page.nodeList.add(temp.get(i));
+                        NodeIndex<K, V> kvNodeIndex = temp.get(i);
+                        page.nodeList.add(kvNodeIndex);
+                        if (kvNodeIndex.bottomPageId != -1) this.getNodePageById(kvNodeIndex.bottomPageId).parentPageId = page.id;
                     }
                     current.nodeList = new ArrayList<>();
                     for (int i = mid; i < temp.size(); i++) {
@@ -166,9 +242,6 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
                     }
                 }
                 // 更新parent指针
-                for (NodeIndex<K, V> kvNodeIndex : page.nodeList) {
-                    if (kvNodeIndex.bottomPageId != -1) this.getNodePageById(kvNodeIndex.bottomPageId).parentPageId = page.id;
-                }
             } else {
                 splitPage = null;
             }
@@ -178,6 +251,7 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
         // 产生新的一层
         if (splitPage != null) {
             NodePage<K, V> page = createPage();
+            // 维护parent指针
             splitPage.parentPageId = page.id;
             current.parentPageId = page.id;
             NodeIndex<K, V> left = new NodeIndex<>(splitPage.getPageMaxKey(), page.id, splitPage.id);
@@ -238,5 +312,18 @@ class NodePage<K extends Comparable<K>, V> {
         return this.nodeList.get(this.nodeList.size() - 1).key;
     }
 
+    public K getPageMinKey() {
+        return this.nodeList.get(0).key;
+    }
 
+}
+
+class SearchRes<K extends Comparable<K>, V> {
+    NodePage<K, V> nodePage;
+    int pos;
+
+    SearchRes(NodePage<K, V> nodePage, int pos) {
+        this.nodePage = nodePage;
+        this.pos = pos;
+    }
 }
