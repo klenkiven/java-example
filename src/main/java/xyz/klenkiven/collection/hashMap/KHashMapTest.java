@@ -1,4 +1,4 @@
-package xyz.klenkiven.collection.map;
+package xyz.klenkiven.collection.hashMap;
 
 import java.util.HashMap;
 import java.util.Random;
