@@ -287,6 +287,7 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
                     for (int i = 0; i < mid; i++) {
                         NodeIndex<K, V> kvNodeIndex = temp.get(i);
                         page.nodeList.add(kvNodeIndex);
+                        // 更新parent指针
                         if (kvNodeIndex.bottomPageId != -1) this.getNodePageById(kvNodeIndex.bottomPageId).parentPageId = page.id;
                     }
                     current.nodeList = new ArrayList<>();
@@ -294,7 +295,6 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
                         current.nodeList.add(temp.get(i));
                     }
                 }
-                // 更新parent指针
             } else {
                 splitPage = null;
             }
