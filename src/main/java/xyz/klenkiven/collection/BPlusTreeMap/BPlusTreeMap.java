@@ -5,6 +5,7 @@ import xyz.klenkiven.collection.BPlusTreeMap.utils.PageUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BPlusTreeMap<K extends Comparable<K>, V> {
     public static HashMap<Integer, NodePage<?, ?>> pageCache = new HashMap<>();
@@ -36,6 +37,32 @@ public class BPlusTreeMap<K extends Comparable<K>, V> {
     public V put(K key, V value) {
         return putVal(key, value);
     }
+
+    public V floor(K key) {
+        SearchRes<K, V> nodePage = getNodePage(key);
+        if (nodePage == null) return null;
+        NodeIndex<K, V> nodeIndex = nodePage.nodePage.nodeList.get(nodePage.pos);
+        if (nodeIndex instanceof Node<K, V> node) {
+            if (key.compareTo(node.key) == 0) return node.value;
+            if (nodePage.pos > 0) {
+                NodeIndex<K, V> nodeIndexTemp = nodePage.nodePage.nodeList.get(nodePage.pos - 1);
+                if (nodeIndexTemp instanceof Node<K, V> n) return n.value;
+            } else {
+                if (nodePage.nodePage.prePageId == -1) return null;
+                List<NodeIndex<K, V>> nodeList = getNodePageById(nodePage.nodePage.prePageId).nodeList;
+                if (nodeList.get(nodeList.size() - 1) instanceof Node<K, V> n) return n.value;
+            }
+        }
+        return null;
+    }
+    public V ceiling(K key) {
+        SearchRes<K, V> searchRes = getNodePage(key);
+        if (searchRes == null) return null;
+        NodeIndex<K, V> nodeIndex = searchRes.nodePage.nodeList.get(searchRes.pos);
+        if (nodeIndex instanceof Node<K, V> node) return node.value;
+        return null;
+    }
+
 
     public V getFirst() {
         NodePage<K, V> nodePageById = getNodePageById(this.headPageId);
