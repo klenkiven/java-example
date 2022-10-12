@@ -1,4 +1,4 @@
-package xyz.klenkiven.collection;
+package xyz.klenkiven.collection.sort;
 
 import java.util.Arrays;
 
@@ -46,7 +46,7 @@ public class MergeSort {
      * 合并有序的两部分
      */
     private static void merge(int[] src, int[] dest, int left, int right, int mid) {
-        System.out.println("Merge SRC: left=" + left + ", right=" + right + ", sortedPart=" + Arrays.toString(src));
+        // System.out.println("Merge SRC: left=" + left + ", right=" + right + ", sortedPart=" + Arrays.toString(src));
         int index = left;
         int i = left; int j = mid + 1;
         while (i <= mid && j <= right) {
@@ -59,7 +59,7 @@ public class MergeSort {
         if (i > mid) while (j <= right) dest[index++] = src[j++];
         else while (i <= mid) dest[index++] = src[i++];
 
-        System.out.println("Merge: left=" + left + ", right=" + right + ", sortedPart=" + Arrays.toString(dest));
+        // ystem.out.println("Merge: left=" + left + ", right=" + right + ", sortedPart=" + Arrays.toString(dest));
     }
 
     private static void insertionSort(int[] dest, int left, int right) {
