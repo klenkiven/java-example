@@ -1,8 +1,10 @@
 package xyz.klenkiven.proxy.jdk;
 
+import net.sf.cglib.proxy.Enhancer;
 import xyz.klenkiven.proxy.ITarget;
 import xyz.klenkiven.proxy.NoInterfaceTarget;
 import xyz.klenkiven.proxy.Target;
+import xyz.klenkiven.proxy.cglib.MyMethodInvocation;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -23,12 +25,7 @@ public class JdkProxyTest {
         System.out.println("Target without Interface Class: " + noInterfaceTarget.getClass());
         System.out.println("Target without Interface Proxy Class: " + obj.getClass());
         System.out.println("Target without Interface Proxy Interfaces: " + Arrays.toString(obj.getClass().getInterfaces()));
-        System.out.print("Target without Interface Proxy Methods: ");
-        Method proxyClassLookup = null;
-        for (Method declaredMethod : obj.getClass().getDeclaredMethods()) {
-            System.out.print(declaredMethod.getName() + ", ");
-        }
-        System.out.println();
+        printDeclaredMethods("Target without Interface Proxy Declared Methods: ", obj);
         System.out.println("事实证明，虽然没有接口，但是 JdkProxy还是会正常代理这个对象，但是没办法强制类型转换");
         System.out.println(obj.toString());
 
@@ -38,16 +35,48 @@ public class JdkProxyTest {
                 target.getClass().getInterfaces(),
                 new MyInvocationHandler(target)
         );
-        System.out.println("Target with Interface Class: " + target.getClass());
-        System.out.println("Target with Interface Proxy Class: " + proxy.getClass());
-        System.out.println("Target with Interface Proxy Interfaces: " + Arrays.toString(proxy.getClass().getInterfaces()));
-        System.out.print("Target with Interface Proxy Methods: ");
-        for (Method declaredMethod : proxy.getClass().getDeclaredMethods()) {
-            System.out.print(declaredMethod.getName() + ", ");
-        }
-        System.out.println();
+        printClassBasicInfo("Target with Interface", target);
+        printClassBasicInfo("Target with Interface Proxy", proxy);
 
         System.out.println("\nDo Proxy Method ========>");
         proxy.doBusiness();
+
+        /* -------------------- PROXY PROXIED INSTANCE -------------------- */
+        // 代理一个已经被代理过的对象是合法的
+        ITarget proxyProxiedInstance = (ITarget) Proxy.newProxyInstance(
+                proxy.getClass().getClassLoader(),
+                proxy.getClass().getInterfaces(),
+                new MyInvocationHandler(proxy)
+        );
+        System.out.println("\n>>>>>>>>> PROXY A PROXIED INSTANCE");
+        proxyProxiedInstance.doBusiness();
+        /* -------------------- PROXY PROXIED INSTANCE -------------------- */
+
+        /* -------------------- CGLIB PROXY A PROXIED PROXIED INSTANCE -------------------- */
+        // CGLIB 没办法代理JDK代理的对象，JDK 可以代理 JDK 代理过的对象
+        Enhancer enhancer = new Enhancer();
+        enhancer.setSuperclass(proxyProxiedInstance.getClass());
+        enhancer.setCallback(new MyMethodInvocation());
+        ITarget cglibProxy = (ITarget) enhancer.create();
+        System.out.println("\n>>>>>>>>> CGLIB PROXY A PROXIED PROXIED INSTANCE");
+        cglibProxy.doBusiness();
+        /* -------------------- CGLIB PROXY A PROXIED PROXIED INSTANCE -------------------- */
+    }
+
+    private static void printClassBasicInfo(String message, Object obj) {
+        System.out.println(">>>>>>>>>>>>>>>>>>> " + message + " <<<<<<<<<<<<<<<<<<<");
+        System.out.println("Class: " + obj.getClass());
+        System.out.println("Interfaces: " + Arrays.toString(obj.getClass().getInterfaces()));
+        printDeclaredMethods("Methods: ", obj);
+        System.out.println(">>>>>>>>>>>>>>>>>>> " + message + " <<<<<<<<<<<<<<<<<<<");
+        System.out.println();
+    }
+
+    private static void printDeclaredMethods(String s, Object obj) {
+        System.out.print(s);
+        for (Method declaredMethod : obj.getClass().getDeclaredMethods()) {
+            System.out.print(declaredMethod.getName() + ", ");
+        }
+        System.out.println();
     }
 }
