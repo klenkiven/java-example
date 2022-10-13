@@ -21,6 +21,7 @@ public class KHashMapTest {
         System.out.println("HashMap Get: " + (System.currentTimeMillis() - start) + "ms");
 
 
+        random = new Random(1234);
         start = System.currentTimeMillis();
         for (int i = 0; i < (1 << 20); i++) {
             kHashMap.put(random.nextInt(1 << 20), 1234);

@@ -26,10 +26,14 @@ public class KHashMap<K, V> {
         }
 
         @Override
-        public K getKey() { return key; }
+        public K getKey() {
+            return key;
+        }
 
         @Override
-        public V getValue() { return value; }
+        public V getValue() {
+            return value;
+        }
 
         @Override
         public V setValue(V value) {
@@ -86,7 +90,9 @@ public class KHashMap<K, V> {
     }
 
     public Node<K, V> getNode(K key) {
-        Node<K, V> node; Node<K, V>[] tab; int cap;
+        Node<K, V> node;
+        Node<K, V>[] tab;
+        int cap;
         int hash = hash(key);
         // 此节点有值的情况
         if ((tab = table) != null && (cap = tab.length) != 0 &&
@@ -109,21 +115,45 @@ public class KHashMap<K, V> {
 
     // 放入新的键值对，如果发生的是更新，那么返回原来的值（或者 NULL）
     public V put(K key, V value) {
-        Node<K, V>[] tab; int cap = 0, hash = hash(key);
+        Node<K, V>[] tab;
+        int cap, hash = hash(key);
 
         // 如果哈希表尚未初始化，那么先完成初始化
         if ((tab = table) == null || (cap = tab.length) == 0) {
             cap = (tab = resize()).length;
         }
 
-        // 查找哈希表中的值
-        Node<K, V> node = getNode(key);
+        Node<K, V> node;
         V oldValue = null;
-        if (node == null) {
+        if ((node = tab[hash & (cap - 1)]) == null) {
             tab[hash & (cap - 1)] = new Node<>(key, value, null);
         } else {
-            oldValue = node.value;
-            node.value = value;
+            Node<K, V> ele;
+            // 判断首个节点是否匹配
+            if (node.hash == hash &&
+                    (node.key == key || Objects.equals(node.key, key))) {
+                oldValue = node.value;
+                ele = node;
+            }
+            // 遍历所有节点，找到对应位置
+            else {
+                for (;;) {
+                    if ((ele = node.next) == null) {
+                        node.next = new Node<>(key, value, null);
+                        break;
+                    }
+                    if (ele.hash == hash &&
+                            (ele.key == key || Objects.equals(ele.key, key))) {
+                        break;
+                    }
+                    node = ele;
+                }
+            }
+            if (ele != null) {
+                V oldVal = ele.value;
+                ele.value = value;
+                return oldVal;
+            }
         }
 
         // 判断是否需要重新 resize
@@ -143,11 +173,11 @@ public class KHashMap<K, V> {
         int newCapacity, newThreshold = 0;
         if (oldCapacity > 0) {          // [EXPAND] 为 HashMap 扩容
             newCapacity = oldCapacity << 1;
-        } else if(oldThreshold > 0) {   // [INITIALIZING] 在初始化 HashMap，在初始化之处就设定了 capacity
+        } else if (oldThreshold > 0) {   // [INITIALIZING] 在初始化 HashMap，在初始化之处就设定了 capacity
             newCapacity = oldThreshold;
         } else {                        // [INITIALIZING] 构造无参数初始化 HashMap
             newCapacity = DEFAULT_INITIAL_CAPACITY;
-            newThreshold = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
+            newThreshold = (int) (DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
         }
         // 初始化 Threshold
         if (newThreshold == 0) {
@@ -159,7 +189,7 @@ public class KHashMap<K, V> {
         // 容器扩容
         threshold = newThreshold;
         @SuppressWarnings({"unchecked"})
-        Node<K,V>[] newTable = (Node<K,V>[])new Node[newCapacity];
+        Node<K, V>[] newTable = (Node<K, V>[]) new Node[newCapacity];
         table = newTable;
 
         // Rehash
@@ -178,7 +208,7 @@ public class KHashMap<K, V> {
                 // 释放 旧哈希表 空间
                 oldTable[i] = null;
                 if (entry.next == null) {   // 单节点处理
-                    newTable[entry.hash & (newCapacity-1)] = entry;
+                    newTable[entry.hash & (newCapacity - 1)] = entry;
                 } else {                    // 拉链处理
                     // 拉两条链表，一条是高位，一条是低位
                     Node<K, V> loHead = null, loTail = null;
