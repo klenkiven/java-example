@@ -1,4 +1,4 @@
-package zzj.klenkiven.collection.explore;
+package zzj.klenkiven.collection;
 
 import java.util.ArrayList;
 import java.util.LinkedList;

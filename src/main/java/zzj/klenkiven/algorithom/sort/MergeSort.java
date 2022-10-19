@@ -1,4 +1,4 @@
-package zzj.klenkiven.collection.sort;
+package zzj.klenkiven.algorithom.sort;
 
 import java.util.Arrays;
 
