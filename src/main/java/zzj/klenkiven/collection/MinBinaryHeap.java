@@ -2,7 +2,7 @@ package zzj.klenkiven.collection;
 
 public class MinBinaryHeap {
     public static void main(String[] args) {
-        int[] arr = new int[]{5,4,2,7,8,1,0,34,78,23,76,1,1,1,1,1,1};
+        int[] arr = new int[]{5, 4, 2, 7, 8, 1, 0, 34, 78, 23, 76, 1, 1, 1, 1, 1, 1};
         MinBinaryHeap binaryHeap = new MinBinaryHeap(arr);
         int size = binaryHeap.size();
         for (int i = 0; i < size; i++) {
@@ -25,6 +25,7 @@ public class MinBinaryHeap {
 
     /**
      * 插入一个数字
+     *
      * @param x 数字
      */
     public void offer(int x) {
@@ -35,6 +36,7 @@ public class MinBinaryHeap {
 
     /**
      * 查看堆中的最小值
+     *
      * @return 最小值
      */
     public int peek() {
@@ -57,6 +59,7 @@ public class MinBinaryHeap {
 
     /**
      * 初始化一个堆
+     *
      * @param array 待堆化
      */
     private void binarify(int[] array) {
@@ -67,18 +70,20 @@ public class MinBinaryHeap {
 
     /**
      * 二叉树上浮
+     *
      * @param index 上浮位置
      */
     private void floatUp(int index) {
         if (index == 0) return;
-        if (heap[index] < heap[index/2]) {
-            swap(index, index/2);
-            floatUp(index/2);
+        if (heap[index] < heap[index / 2]) {
+            swap(index, index / 2);
+            floatUp(index / 2);
         }
     }
 
     /**
      * 二叉树下沉
+     *
      * @param index 下沉位置
      */
     private void sinkDown(int index) {
@@ -94,6 +99,7 @@ public class MinBinaryHeap {
 
     /**
      * 返回子树中较大的一个索引
+     *
      * @param index 索引
      * @return 子树中较大的一个索引
      */
